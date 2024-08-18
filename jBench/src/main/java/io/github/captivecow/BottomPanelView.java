@@ -91,4 +91,20 @@ public class BottomPanelView {
     public JPanel getBottomPanel(){
         return bottomPanel;
     }
+
+    public JButton getUpdateRenderButton(){
+        return updateRenderButton;
+    }
+
+    public DisplayModeOption getCurrentDisplayOption(){
+        return (DisplayModeOption) displayResolutionOptions.getSelectedItem();
+    }
+
+    public RenderSize getCurrentRenderSize(){
+        return (RenderSize) renderSizeOptions.getSelectedItem();
+    }
+
+    public int getImageAmount(){
+        return (int) imageAmountOptions.getSelectedItem();
+    }
 }

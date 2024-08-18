@@ -2,6 +2,8 @@ package io.github.captivecow;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferStrategy;
 
 public class JBenchView implements Runnable {
@@ -12,13 +14,15 @@ public class JBenchView implements Runnable {
     private GridBagLayout layout;
     private GridBagConstraints constraints;
     private BottomPanelView bottomPanel;
+    private JBenchController controller;
 
-    public JBenchView(){
+    public JBenchView(JBenchController controller){
         frame = new JFrame("jBench");
         canvas = new Canvas();
         layout = new GridBagLayout();
         constraints = new GridBagConstraints();
         bottomPanel = new BottomPanelView();
+        this.controller = controller;
     }
 
     public void createAndShowGui(){
@@ -31,6 +35,7 @@ public class JBenchView implements Runnable {
         frame.add(canvas, constraints);
 
         bottomPanel.initBottomPanelView();
+        bottomPanel.getUpdateRenderButton().addActionListener(e -> controller.update());
         constraints.gridx = 0;
         constraints.gridy = 1;
         constraints.fill = GridBagConstraints.BOTH;
@@ -53,5 +58,16 @@ public class JBenchView implements Runnable {
     @Override
     public void run() {
         createAndShowGui();
+    }
+
+    public RenderState getRenderState(){
+        DisplayModeOption displayModeOption = bottomPanel.getCurrentDisplayOption();
+        RenderSize renderSize = bottomPanel.getCurrentRenderSize();
+        int imageAmount = bottomPanel.getImageAmount();
+        return new RenderState(displayModeOption, renderSize, imageAmount);
+    }
+
+    public void modelNotify(){
+        System.out.println("Notify from model");
     }
 }

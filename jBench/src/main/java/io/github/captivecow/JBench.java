@@ -13,8 +13,8 @@ public class JBench
 {
     public static void main( String[] args ) {
 
-        JBenchView jBenchView = new JBenchView();
-        SwingUtilities.invokeLater(jBenchView);
+        JBenchController controller = new JBenchController();
+        controller.start();
 
 //        GraphicsDevice graphicsDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 //        DisplayMode[] displayModes = graphicsDevice.getDisplayModes();
