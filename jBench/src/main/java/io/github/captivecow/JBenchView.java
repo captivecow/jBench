@@ -43,7 +43,7 @@ public class JBenchView implements Runnable {
         frame.setVisible(true);
 
         // Draw components that are not being drawn initially because of ignoring the repaint
-        frame.repaint();
+        bottomPanel.getBottomPanel().repaint();
 
         canvas.createBufferStrategy(2);
         bufferStrategy = canvas.getBufferStrategy();
