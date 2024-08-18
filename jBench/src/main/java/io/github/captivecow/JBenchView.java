@@ -33,6 +33,7 @@ public class JBenchView implements Runnable {
         bottomPanel.initBottomPanelView();
         constraints.gridx = 0;
         constraints.gridy = 1;
+        constraints.fill = GridBagConstraints.BOTH;
         frame.add(bottomPanel.getBottomPanel(), constraints);
 
         frame.setIgnoreRepaint(true);
