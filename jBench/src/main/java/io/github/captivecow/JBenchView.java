@@ -8,16 +8,23 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class JBenchView implements Runnable {
 
-    private JFrame frame;
-    private Canvas canvas;
+    private final JFrame frame;
+    private final Canvas canvas;
     private BufferStrategy bufferStrategy;
-    private GridBagLayout layout;
-    private GridBagConstraints constraints;
-    private BottomPanelView bottomPanel;
+    private final GridBagLayout layout;
+    private final GridBagConstraints constraints;
+    private final BottomPanelView bottomPanel;
     private BufferedImage sprite;
+    private final ScheduledExecutorService fpsScheduler =
+            Executors.newScheduledThreadPool(1);
+    private RenderState state;
+    private final Runnable beingRendering;
 
     public JBenchView(){
         frame = new JFrame("jBench");
@@ -25,6 +32,7 @@ public class JBenchView implements Runnable {
         layout = new GridBagLayout();
         constraints = new GridBagConstraints();
         bottomPanel = new BottomPanelView();
+        beingRendering = this::render;
     }
 
     public void createAndShowGui(){
@@ -60,6 +68,8 @@ public class JBenchView implements Runnable {
 
         canvas.createBufferStrategy(2);
         bufferStrategy = canvas.getBufferStrategy();
+
+        fpsScheduler.scheduleAtFixedRate(beingRendering, 0, 1, TimeUnit.SECONDS);
     }
 
     @Override
@@ -68,8 +78,7 @@ public class JBenchView implements Runnable {
     }
 
     public void updateRenderState(){
-        RenderState newRenderState = getRenderState();
-        System.out.println(newRenderState.toString());
+        state = getRenderState();
     }
 
     public RenderState getRenderState(){
@@ -103,5 +112,11 @@ public class JBenchView implements Runnable {
         Graphics2D graphics2D = (Graphics2D) sprite.getGraphics();
         graphics2D.drawImage(rawImage, 0, 0, null);
         graphics2D.dispose();
+    }
+
+
+    public void render(){
+        System.out.println(SwingUtilities.isEventDispatchThread());
+        System.out.println("Hello world");
     }
 }
