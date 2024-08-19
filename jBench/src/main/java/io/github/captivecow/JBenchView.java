@@ -3,8 +3,6 @@ package io.github.captivecow;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -30,6 +28,11 @@ public class JBenchView implements Runnable {
     }
 
     public void createAndShowGui(){
+
+        /*
+            Mixing Canvas (heavyweight) with other lightweight components
+            https://www.oracle.com/technical-resources/articles/java/mixing-components.html#:~:text=Historically%2C%20in%20the%20Java%20language,you%20might%20need%20to%20know.
+         */
         canvas.setPreferredSize(new Dimension(800, 600));
         canvas.setIgnoreRepaint(true);
         frame.setLayout(layout);
@@ -88,6 +91,10 @@ public class JBenchView implements Runnable {
             throw new RuntimeException(e);
         }
 
+        /*
+            Load image with BITMASK transparency
+            https://docs.oracle.com/en/java/javase/17/troubleshoot/java-2d.html#GUID-D5849E59-9EB6-46FA-BA47-EA5C52DFA077
+         */
         sprite = graphicsConfiguration.createCompatibleImage(
                 rawImage.getWidth(),
                 rawImage.getHeight(), Transparency.BITMASK
