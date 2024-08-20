@@ -168,7 +168,7 @@ public class JBenchView implements Runnable {
                 accumulation += currentDelta;
 
                 Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
-                g2d.clearRect(0, 0, 800, 600);
+                g2d.clearRect(0, 0, state.displayModeOption().width(), state.displayModeOption().height());
                 g2d.setRenderingHints(HINTS);
 
                 if(accumulation > 1.0){
