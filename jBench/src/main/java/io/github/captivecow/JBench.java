@@ -15,6 +15,7 @@ public class JBench
 
         JBenchView jBenchView = new JBenchView();
         jBenchView.loadImage();
+        jBenchView.initRenderState();
         SwingUtilities.invokeLater(jBenchView);
 
 //        JBenchController controller = new JBenchController();
