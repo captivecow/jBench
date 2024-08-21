@@ -7,7 +7,6 @@ import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -25,13 +24,15 @@ public class JBenchView implements Runnable {
     private final Runnable beingRendering;
     private Sprite sprite;
     private ArrayList<Sprite> spriteList;
-    private Map<Integer, BufferedImage> imageMap;
+    private final Map<Integer, BufferedImage> imageMap;
     private long lastTime;
     private double accumulation = 0;
     private double lastDelta = 1;
-    private ConcurrentLinkedQueue<RenderState> viewEvents;
+    private final ConcurrentLinkedQueue<RenderState> viewEvents;
+    private final Random random;
 
     public JBenchView(){
+        random = new Random();
         frame = new JFrame("jBench");
         canvas = new Canvas();
         layout = new GridBagLayout();
@@ -61,7 +62,7 @@ public class JBenchView implements Runnable {
         bottomPanel.getUpdateRenderButton().addActionListener(e -> updateRenderState());
         constraints.gridx = 0;
         constraints.gridy = 1;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.fill = GridBagConstraints.BOTH;
         frame.add(bottomPanel.getBottomPanel(), constraints);
 
         frame.setIgnoreRepaint(true);
@@ -155,7 +156,7 @@ public class JBenchView implements Runnable {
                     newState.displayModeOption().height()));
             frame.pack();
             frame.revalidate();
-            bottomPanel.getBottomPanel().repaint();
+            SwingUtilities.invokeLater(() -> bottomPanel.getBottomPanel().repaint());
         }
         if(!newState.renderSize().toString().equals(state.renderSize().toString())){
             // Still need random
@@ -180,32 +181,60 @@ public class JBenchView implements Runnable {
         state = newState;
     }
 
+    public void updateSprites(){
+        for(Sprite sprite: spriteList){
+            float newX = sprite.getX() + sprite.getVeloX();
+            float newY = sprite.getY() + sprite.getVeloY();
+
+            if(newX < 0){
+                newX = 0.0F;
+                sprite.setVeloX(sprite.getVeloX() * -1);
+            }
+            else if(newX > state.displayModeOption().width()){
+                newX = state.displayModeOption().width();
+                sprite.setVeloX(sprite.getVeloX() * -1);
+            }
+            sprite.setX(newX);
+
+            if(newY < 0){
+                newY = 0.0F;
+                sprite.setVeloY(sprite.getVeloY() * -1);
+            }
+            else if(newY > state.displayModeOption().height()){
+                newY = state.displayModeOption().height();
+                sprite.setVeloY(sprite.getVeloY() * -1);
+            }
+            sprite.setY(newY);
+        }
+    }
 
     public void render(){
+
+        long time = System.nanoTime();
+        double currentDelta = (double) (time - lastTime)/1000000000.0;
+        lastTime = time;
+        accumulation += currentDelta;
+
+        if(!viewEvents.isEmpty()){
+            RenderState newState = viewEvents.remove();
+            update(newState);
+        }
+        if(accumulation > 1.0){
+            lastDelta = currentDelta;
+            accumulation = 0;
+        }
+
+        updateSprites();
+
         /*
             Correct way to render with buffer strategy
             https://docs.oracle.com/javase%2F8%2Fdocs%2Fapi%2F%2F/java/awt/image/BufferStrategy.html#:~:text=The%20BufferStrategy%20class%20represents%20the,buffer%20strategy%20can%20be%20implemented.
          */
         do {
             do {
-                long time = System.nanoTime();
-                double currentDelta = (double) (time - lastTime)/1000000000.0;
-                lastTime = time;
-                accumulation += currentDelta;
-
-                if(!viewEvents.isEmpty()){
-                    RenderState newState = viewEvents.remove();
-                    update(newState);
-                }
-
                 Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
                 g2d.clearRect(0, 0, state.displayModeOption().width(), state.displayModeOption().height());
                 g2d.setRenderingHints(HINTS);
-
-                if(accumulation > 1.0){
-                    lastDelta = currentDelta;
-                    accumulation = 0;
-                }
 
                 for (Sprite sprite: spriteList){
                     g2d.drawImage(imageMap.get(sprite.getSpriteId()),
@@ -213,7 +242,7 @@ public class JBenchView implements Runnable {
                             sprite.getWidth(), sprite.getHeight(), null);
                 }
 
-                g2d.setColor(Color.ORANGE);
+                g2d.setColor(Color.LIGHT_GRAY);
                 g2d.fillRect(0, 0, 50, 15);
                 g2d.setColor(Color.BLACK);
                 g2d.drawString("FPS: " + Math.round(1/lastDelta), 4, 11);

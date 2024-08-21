@@ -6,6 +6,8 @@ public class Sprite {
     private int height;
     private float x;
     private float y;
+    private float veloX = .5F;
+    private float veloY = .5F;
 
     public Sprite(int width, int height, float x, float y){
         this.width = width;
@@ -49,5 +51,21 @@ public class Sprite {
 
     public float getY() {
         return y;
+    }
+
+    public float getVeloX() {
+        return veloX;
+    }
+
+    public void setVeloX(float veloX) {
+        this.veloX = veloX;
+    }
+
+    public float getVeloY() {
+        return veloY;
+    }
+
+    public void setVeloY(float veloY) {
+        this.veloY = veloY;
     }
 }
