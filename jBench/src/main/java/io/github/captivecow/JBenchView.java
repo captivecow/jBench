@@ -29,10 +29,8 @@ public class JBenchView implements Runnable {
     private double accumulation = 0;
     private double lastDelta = 1;
     private final ConcurrentLinkedQueue<RenderState> viewEvents;
-    private final Random random;
 
     public JBenchView(){
-        random = new Random();
         frame = new JFrame("jBench");
         canvas = new Canvas();
         layout = new GridBagLayout();

@@ -1,19 +1,23 @@
 package io.github.captivecow;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 public class Sprite {
 
     private int width;
     private int height;
     private float x;
     private float y;
-    private float veloX = .5F;
-    private float veloY = .5F;
+    private float veloX;
+    private float veloY;
 
     public Sprite(int width, int height, float x, float y){
         this.width = width;
         this.height = height;
         this.x = x;
         this.y = y;
+        veloX = ThreadLocalRandom.current().nextBoolean() ? 1: -1;
+        veloY = ThreadLocalRandom.current().nextBoolean() ? 1: -1;
     }
 
 
