@@ -82,6 +82,10 @@ public class JBenchView implements Runnable {
 
     public void initRenderState(){
         HINTS = new HashMap<>();
+        /*
+            Use rendering hints for speed
+            https://docs.oracle.com/javase/8/docs/api/java/awt/RenderingHints.html
+         */
         HINTS.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
         HINTS.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
         HINTS.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
