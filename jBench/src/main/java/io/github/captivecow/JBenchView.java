@@ -7,19 +7,11 @@ import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DecimalFormat;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class JBenchView implements Runnable {
-
     private Map<RenderingHints.Key, Object> HINTS;
-    private DecimalFormat df = new DecimalFormat("#.####");
-
-
     private final JFrame frame;
     private final Canvas canvas;
     private BufferStrategy bufferStrategy;
@@ -32,10 +24,11 @@ public class JBenchView implements Runnable {
     private final Runnable beingRendering;
     private Sprite sprite;
     private ArrayList<Sprite> spriteList;
-    private Map<Integer, BufferedImage> imageMap;
+    private final Map<Integer, BufferedImage> imageMap;
     private long lastTime;
     private double accumulation = 0;
     private double lastDelta = 1;
+    private final ConcurrentLinkedQueue<RenderState> viewEvents;
 
     public JBenchView(){
         frame = new JFrame("jBench");
@@ -45,6 +38,7 @@ public class JBenchView implements Runnable {
         bottomPanel = new BottomPanelView();
         spriteList = new ArrayList<>();
         imageMap = new HashMap<>();
+        viewEvents = new ConcurrentLinkedQueue<>();
         beingRendering = this::render;
     }
 
@@ -88,6 +82,10 @@ public class JBenchView implements Runnable {
 
     public void initRenderState(){
         HINTS = new HashMap<>();
+        /*
+            Use rendering hints for speed
+            https://docs.oracle.com/javase/8/docs/api/java/awt/RenderingHints.html
+         */
         HINTS.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
         HINTS.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
         HINTS.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
@@ -96,8 +94,8 @@ public class JBenchView implements Runnable {
         state = new RenderState(new DisplayModeOption(800, 600), new RenderSize(16, 16), 10);
 
         for (int i = 0; i<state.renderAmount(); i++){
-            int randomX = ThreadLocalRandom.current().nextInt(0, 800 + 1);
-            int randomY = ThreadLocalRandom.current().nextInt(0, 600 + 1);
+            int randomX = ThreadLocalRandom.current().nextInt(0, 800);
+            int randomY = ThreadLocalRandom.current().nextInt(0, 600);
 
             Sprite newSprite = new Sprite(
                     state.renderSize().width(),
@@ -114,7 +112,8 @@ public class JBenchView implements Runnable {
     }
 
     public void updateRenderState(){
-        state = getRenderState();
+        RenderState updatedState = getRenderState();
+        viewEvents.add(updatedState);
     }
 
     public RenderState getRenderState(){
@@ -152,35 +151,103 @@ public class JBenchView implements Runnable {
         imageMap.put(1, compatibleImage);
     }
 
+    public void update(RenderState newState){
+        if(!newState.displayModeOption().toString().equals(state.displayModeOption().toString())){
+            canvas.setPreferredSize(new Dimension(
+                    newState.displayModeOption().width(),
+                    newState.displayModeOption().height()));
+            frame.pack();
+            frame.revalidate();
+            SwingUtilities.invokeLater(() -> bottomPanel.getBottomPanel().repaint());
+        }
+        if(!newState.renderSize().toString().equals(state.renderSize().toString())){
+            // Still need random
+            for(Sprite sprite: spriteList){
+                sprite.setWidth(newState.renderSize().width());
+                sprite.setHeight(newState.renderSize().height());
+            }
+        }
+        if(newState.renderAmount() != state.renderAmount()){
+            spriteList = new ArrayList<>();
+            for(int i = 0; i<newState.renderAmount(); i++){
+                int randomX = ThreadLocalRandom.current().nextInt(0, newState.displayModeOption().width());
+                int randomY = ThreadLocalRandom.current().nextInt(0, newState.displayModeOption().height());
+                Sprite newSprite = new Sprite(
+                        newState.renderSize().width(),
+                        newState.renderSize().height(),
+                        randomX,
+                        randomY);
+                spriteList.add(newSprite);
+            }
+        }
+        state = newState;
+    }
+
+    public void updateSprites(){
+        for(Sprite sprite: spriteList){
+            float newX = sprite.getX() + sprite.getVeloX();
+            float newY = sprite.getY() + sprite.getVeloY();
+
+            if(newX < 0){
+                newX = 0.0F;
+                sprite.setVeloX(sprite.getVeloX() * -1);
+            }
+            else if(newX > state.displayModeOption().width()){
+                newX = state.displayModeOption().width();
+                sprite.setVeloX(sprite.getVeloX() * -1);
+            }
+            sprite.setX(newX);
+
+            if(newY < 0){
+                newY = 0.0F;
+                sprite.setVeloY(sprite.getVeloY() * -1);
+            }
+            else if(newY > state.displayModeOption().height()){
+                newY = state.displayModeOption().height();
+                sprite.setVeloY(sprite.getVeloY() * -1);
+            }
+            sprite.setY(newY);
+        }
+    }
 
     public void render(){
+
+        long time = System.nanoTime();
+        double currentDelta = (double) (time - lastTime)/1000000000.0;
+        lastTime = time;
+        accumulation += currentDelta;
+
+        if(!viewEvents.isEmpty()){
+            RenderState newState = viewEvents.remove();
+            update(newState);
+        }
+        if(accumulation > 1.0){
+            lastDelta = currentDelta;
+            accumulation = 0;
+        }
+
+        updateSprites();
+
         /*
             Correct way to render with buffer strategy
             https://docs.oracle.com/javase%2F8%2Fdocs%2Fapi%2F%2F/java/awt/image/BufferStrategy.html#:~:text=The%20BufferStrategy%20class%20represents%20the,buffer%20strategy%20can%20be%20implemented.
          */
         do {
             do {
-
-                long time = System.nanoTime();
-                double currentDelta = (double) (time - lastTime)/1000000000.0;
-                lastTime = time;
-                accumulation += currentDelta;
-
                 Graphics2D g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
                 g2d.clearRect(0, 0, state.displayModeOption().width(), state.displayModeOption().height());
                 g2d.setRenderingHints(HINTS);
-
-                if(accumulation > 1.0){
-                    lastDelta = currentDelta;
-                    accumulation = 0;
-                }
 
                 for (Sprite sprite: spriteList){
                     g2d.drawImage(imageMap.get(sprite.getSpriteId()),
                             (int) sprite.getX(), (int) sprite.getY(),
                             sprite.getWidth(), sprite.getHeight(), null);
                 }
-                g2d.drawString("FPS: " + df.format(Math.round(1/lastDelta)), 0, 10);
+
+                g2d.setColor(Color.LIGHT_GRAY);
+                g2d.fillRect(0, 0, 50, 15);
+                g2d.setColor(Color.BLACK);
+                g2d.drawString("FPS: " + Math.round(1/lastDelta), 4, 11);
 
                 g2d.dispose();
             } while (bufferStrategy.contentsRestored());

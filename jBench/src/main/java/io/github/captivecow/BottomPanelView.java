@@ -60,20 +60,19 @@ public class BottomPanelView {
 
     private void populateDisplayModes(){
         GraphicsDevice graphicsDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        DisplayMode[] displayModes = graphicsDevice.getDisplayModes();
+        Rectangle screenSize = graphicsDevice.getDefaultConfiguration().getBounds();
 
         DisplayModeOption defaultDisplayModeOption = new DisplayModeOption(800, 600);
         displayResolutionOptions.addItem(defaultDisplayModeOption);
+        displayResolutionOptions.addItem(new DisplayModeOption(1280, 720));
 
-        for (DisplayMode displayMode : displayModes) {
-            DisplayModeOption displayModeOption = new DisplayModeOption(displayMode.getWidth(), displayMode.getHeight());
-            displayResolutionOptions.addItem(displayModeOption);
-        }
     }
 
     public void populateImageAmounts(){
         imageAmountOptions.addItem(10);
+        imageAmountOptions.addItem(50);
         imageAmountOptions.addItem(100);
+        imageAmountOptions.addItem(500);
         imageAmountOptions.addItem(1000);
         imageAmountOptions.addItem(5000);
         imageAmountOptions.addItem(10000);
